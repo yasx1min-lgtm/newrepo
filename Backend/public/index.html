@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultation Booking</title>
+
+    <style>
+        * { box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        label {
+            display: block;
+            margin-top: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+        
+        .time-slot {
+            padding: 15px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+            font-weight: 500;
+            font-size: 15px;
+        }
+        
+        .time-slot:hover:not(.disabled) {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        .time-slot.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .time-slot.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: #f5f5f5;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            margin-top: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        #response.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            display: block;
+        }
+        
+        #response.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            display: block;
+        }
+        
+        .timezone-info {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #1565c0;
+            border: 2px solid #90caf9;
+            text-align: center;
+        }
+        
+        .timezone-badge {
+            display: inline-block;
+            background: #1976d2;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .timezone-select-group {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .slots-header {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 14px;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            grid-column: 1 / -1;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .calendar-note {
+            background: #fff9e6;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>📅 Book a Consultation</h2>
+        <p class="subtitle">Schedule your free 30-minute strategy call</p>
+        
+        <div class="timezone-info">
+            🌍 Times shown in your timezone
+            <div class="timezone-badge" id="userTimezone"></div>
+            <div class="timezone-select-group">
+                <label for="timezoneSelect" style="margin: 10px 0 5px 0; font-size: 12px;">Change timezone:</label>
+                <select id="timezoneSelect" style="padding: 8px; font-size: 13px;">
+                    <!-- Populated by JavaScript -->
+                </select>
+            </div>
+        </div>
+
+        <form id="bookingForm">
+            <label>First Name *</label>
+            <input type="text" id="first_name" required placeholder="Enter your first name">
+
+            <label>Last Name *</label>
+            <input type="text" id="last_name" required placeholder="Enter your last name">
+
+            <label>Email *</label>
+            <input type="email" id="email" required placeholder="your.email@example.com">
+
+            <label>Phone *</label>
+            <input type="tel" id="phone" required placeholder="+1 (555) 123-4567">
+
+            <label>Choose Date *</label>
+            <input type="date" id="date" required>
+
+            <label>Choose Time *</label>
+            <div class="slots-header" id="slotsHeader">
+                Select your preferred time
+            </div>
+            <div class="time-slots" id="timeSlots">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📅</div>
+                    <div>Please select a date to see available times</div>
+                </div>
+            </div>
+            <input type="hidden" id="selectedTimeUTC">
+
+            <div class="calendar-note">
+                📧 You'll receive a confirmation email with a calendar invite (.ics file) that you can add to Google Calendar, Outlook, Apple Calendar, or any other calendar app!
+            </div>
+
+            <button type="submit" id="submitBtn">Book Consultation</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Booking your consultation...</p>
+        </div>
+
+        <div id="response"></div>
+    </div>
+
+    <script>
+        // Popular timezones list
+        const popularTimezones = [
+            { value: 'America/New_York', label: 'Eastern Time (ET)' },
+            { value: 'America/Chicago', label: 'Central Time (CT)' },
+            { value: 'America/Denver', label: 'Mountain Time (MT)' },
+            { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+            { value: 'America/Phoenix', label: 'Arizona' },
+            { value: 'America/Anchorage', label: 'Alaska' },
+            { value: 'Pacific/Honolulu', label: 'Hawaii' },
+            { value: 'Europe/London', label: 'London (GMT)' },
+            { value: 'Europe/Paris', label: 'Paris (CET)' },
+            { value: 'Europe/Berlin', label: 'Berlin (CET)' },
+            { value: 'Europe/Moscow', label: 'Moscow' },
+            { value: 'Asia/Dubai', label: 'Dubai' },
+            { value: 'Asia/Kolkata', label: 'India' },
+            { value: 'Asia/Singapore', label: 'Singapore' },
+            { value: 'Asia/Tokyo', label: 'Tokyo' },
+            { value: 'Australia/Sydney', label: 'Sydney' },
+            { value: 'Pacific/Auckland', label: 'Auckland' }
+        ];
+
+        let USER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        // Initialize timezone selector
+        function initTimezoneSelector() {
+            const select = document.getElementById('timezoneSelect');
+            
+            // Add current timezone as first option
+            const currentOption = document.createElement('option');
+            currentOption.value = USER_TIMEZONE;
+            currentOption.textContent = `${USER_TIMEZONE} (Current)`;
+            currentOption.selected = true;
+            select.appendChild(currentOption);
+            
+            // Add popular timezones
+            popularTimezones.forEach(tz => {
+                if (tz.value !== USER_TIMEZONE) {
+                    const option = document.createElement('option');
+                    option.value = tz.value;
+                    option.textContent = tz.label;
+                    select.appendChild(option);
+                }
+            });
+            
+            // Handle timezone change
+            select.addEventListener('change', (e) => {
+                USER_TIMEZONE = e.target.value;
+                document.getElementById('userTimezone').textContent = USER_TIMEZONE;
+                
+                // Refresh slots if date is selected
+                const selectedDate = document.getElementById('date').value;
+                if (selectedDate) {
+                    displayTimeSlots();
+                }
+            });
+        }
+
+        document.getElementById('userTimezone').textContent = USER_TIMEZONE;
+        initTimezoneSelector();
+
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date').min = today;
+
+        async function fetchAvailableSlotsFromAPI(dateStr) {
+            try {
+                const response = await fetch(`/api/bookings/available-slots?date=${dateStr}`);
+                const result = await response.json();
+                
+                if (result.success && result.data.slots) {
+                    return result.data.slots.map(slot => {
+                        const slotDate = new Date(slot.starts_at);
+                        return {
+                            localTime: slotDate,
+                            localTimeStr: slotDate.toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true,
+                                timeZone: USER_TIMEZONE
+                            }),
+                            utcISO: slotDate.toISOString(),
+                            isPast: slotDate < new Date(),
+                            hapioSlot: slot
+                        };
+                    });
+                }
+                return [];
+            } catch (error) {
+                console.error('Error fetching slots:', error);
+                return [];
+            }
+        }
+
+        async function displayTimeSlots() {
+            const slotsContainer = document.getElementById('timeSlots');
+            const selectedDate = document.getElementById('date').value;
+            
+            if (!selectedDate) {
+                slotsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📅</div>
+                        <div>Please select a date to see available times</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            slotsContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="spinner"></div>
+                    <div style="margin-top: 10px;">Loading available times...</div>
+                </div>
+            `;
+            
+            const slots = await fetchAvailableSlotsFromAPI(selectedDate);
+            
+            if (slots.length === 0) {
+                slotsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">😔</div>
+                        <div>No available times for this date</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            const selectedDateObj = new Date(selectedDate + 'T00:00:00');
+            const dateFormatted = selectedDateObj.toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('slotsHeader').textContent = `${dateFormatted} (${slots.length} slots available)`;
+            
+            slotsContainer.innerHTML = '';
+            
+            slots.forEach(slot => {
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'time-slot' + (slot.isPast ? ' disabled' : '');
+                slotDiv.textContent = slot.localTimeStr;
+                
+                if (!slot.isPast) {
+                    slotDiv.addEventListener('click', () => {
+                        document.querySelectorAll('.time-slot').forEach(s => {
+                            s.classList.remove('selected');
+                        });
+                        slotDiv.classList.add('selected');
+                        document.getElementById('selectedTimeUTC').value = slot.utcISO;
+                    });
+                }
+                
+                slotsContainer.appendChild(slotDiv);
+            });
+        }
+
+        document.getElementById('date').addEventListener('change', displayTimeSlots);
+        displayTimeSlots();
+
+        document.getElementById("bookingForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const first_name = document.getElementById("first_name").value.trim();
+            const last_name = document.getElementById("last_name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const phone = document.getElementById("phone").value.trim();
+            const selectedTimeUTC = document.getElementById("selectedTimeUTC").value;
+
+            if (!selectedTimeUTC) {
+                showResponse("⚠️ Please select a time slot", "error");
+                return;
+            }
+
+            document.getElementById("loading").style.display = "block";
+            document.getElementById("submitBtn").disabled = true;
+            document.getElementById("response").style.display = "none";
+
+            const fullName = `${first_name} ${last_name}`;
+
+            const data = {
+                name: fullName,
+                email: email,
+                phone: phone,
+                date: selectedTimeUTC,
+                timezone: USER_TIMEZONE
+            };
+
+            try {
+                const res = await fetch("/api/bookings", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await res.json();
+
+                if (result.success) {
+                    const bookingDate = new Date(selectedTimeUTC);
+                    
+                    showResponse(`
+                        <h3>✅ Booking Confirmed!</h3>
+                        <p><strong>Name:</strong> ${fullName}</p>
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Date & Time:</strong><br>
+                           ${bookingDate.toLocaleString('en-US', {
+                               weekday: 'long',
+                               year: 'numeric',
+                               month: 'long',
+                               day: 'numeric',
+                               hour: 'numeric',
+                               minute: '2-digit',
+                               timeZone: USER_TIMEZONE
+                           })}
+                        </p>
+                        <p><strong>Timezone:</strong> ${USER_TIMEZONE}</p>
+                        <p><strong>🎥 Zoom Meeting:</strong><br>
+                           <a href="${result.data.meeting.join_url}" target="_blank" style="word-break: break-all; color: #667eea;">${result.data.meeting.join_url}</a>
+                        </p>
+                        <div style="margin-top: 20px; padding: 15px; background: #d4edda; border-radius: 8px; border: 1px solid #c3e6cb;">
+                           📧 <strong>Check your email!</strong><br>
+                           We've sent a confirmation with a calendar invite (.ics file) to <strong>${email}</strong>
+                        </div>
+                    `, "success");
+                    
+                    document.getElementById("bookingForm").reset();
+                    document.getElementById('selectedTimeUTC').value = '';
+                    
+                    const currentDate = document.getElementById('date').value;
+                    if (currentDate) {
+                        document.getElementById('date').value = currentDate;
+                        await displayTimeSlots();
+                    }
+                } else {
+                    showResponse(`❌ Booking Failed: ${result.message}`, "error");
+                }
+            } 
+            catch (err) {
+                showResponse(`❌ Error: ${err.message}`, "error");
+            }
+            finally {
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("submitBtn").disabled = false;
+            }
+        });
+
+        function showResponse(message, type) {
+            const responseDiv = document.getElementById("response");
+            responseDiv.innerHTML = message;
+            responseDiv.className = type;
+            responseDiv.style.display = "block";
+            responseDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    </script>
+
+</body>
+</html>
